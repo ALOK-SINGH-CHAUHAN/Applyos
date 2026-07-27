@@ -1,0 +1,14 @@
+export declare const sessionFlag: any;
+export declare const headedFlag: any;
+export declare const headlessFlag: any;
+export declare const localFlag: any;
+export declare const remoteFlag: any;
+export declare const verifiedFlag: any;
+export declare const proxiesFlag: any;
+export declare const autoConnectFlag: any;
+export declare const cdpFlag: any;
+export declare const targetIdFlag: any;
+export declare const chromeArgFlag: any;
+export declare const ignoreDefaultChromeArgFlag: any;
+export declare const noDefaultChromeArgsFlag: any;
+export declare function sessionName(value?: string): string;

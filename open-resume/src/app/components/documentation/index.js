@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Table = exports.Badge = exports.Link = exports.Paragraph = exports.Heading = void 0;
+const Heading_1 = require("components/documentation/Heading");
+Object.defineProperty(exports, "Heading", { enumerable: true, get: function () { return Heading_1.Heading; } });
+const Paragraph_1 = require("components/documentation/Paragraph");
+Object.defineProperty(exports, "Paragraph", { enumerable: true, get: function () { return Paragraph_1.Paragraph; } });
+const Link_1 = require("components/documentation/Link");
+Object.defineProperty(exports, "Link", { enumerable: true, get: function () { return Link_1.Link; } });
+const Badge_1 = require("components/documentation/Badge");
+Object.defineProperty(exports, "Badge", { enumerable: true, get: function () { return Badge_1.Badge; } });
+const Table_1 = require("components/documentation/Table");
+Object.defineProperty(exports, "Table", { enumerable: true, get: function () { return Table_1.Table; } });

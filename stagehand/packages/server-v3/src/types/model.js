@@ -1,0 +1,16 @@
+export const AISDK_PROVIDERS = [
+    "openai",
+    "anthropic",
+    "google",
+    "xai",
+    "azure",
+    "groq",
+    "cerebras",
+    "togetherai",
+    "mistral",
+    "deepseek",
+    "perplexity",
+    "ollama",
+    "vertex",
+    "bedrock",
+];

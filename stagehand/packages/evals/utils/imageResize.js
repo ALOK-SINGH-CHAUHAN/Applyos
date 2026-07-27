@@ -1,0 +1,17 @@
+import sharp from "sharp";
+export async function imageResize(img, scaleFactor) {
+    const metadata = await sharp(img).metadata();
+    if (metadata.width && metadata.height) {
+        const width = Math.round(metadata.width * scaleFactor);
+        const height = Math.round(metadata.height * scaleFactor);
+        return await sharp(img)
+            .resize(width, height, { fit: "inside", kernel: sharp.kernel.lanczos3 })
+            .png({
+            compressionLevel: 9,
+            adaptiveFiltering: true,
+            palette: true,
+        })
+            .toBuffer();
+    }
+    return img;
+}

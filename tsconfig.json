@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "strict": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "composite": false,
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@autoapply/shared": ["packages/shared/src/index.ts"],
+      "@autoapply/ai-provider": ["packages/ai-provider/src/index.ts"],
+      "@autoapply/storage-provider": ["packages/storage-provider/src/index.ts"],
+      "@autoapply/automation": ["packages/automation/src/index.ts"],
+      "@autoapply/ui": ["packages/ui/src/index.ts"],
+      "@autoapply/resume-render": ["packages/resume-render/src/index.ts"],
+      "@autoapply/plugin-greenhouse": ["plugins/greenhouse/src/index.ts"],
+      "@autoapply/plugin-lever": ["plugins/lever/src/index.ts"],
+      "@autoapply/plugin-ashby": ["plugins/ashby/src/index.ts"],
+      "@autoapply/plugin-guru": ["plugins/guru/src/index.ts"],
+      "@autoapply/plugin-peopleperhour": ["plugins/peopleperhour/src/index.ts"]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next",
+    "Next-js-Boilerplate",
+    "open-resume",
+    "stagehand",
+    "unstructured"
+  ]
+}

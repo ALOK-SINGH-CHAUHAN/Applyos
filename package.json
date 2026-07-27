@@ -1,0 +1,30 @@
+{
+  "name": "autoapply-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AutoApply AI-Powered Job Application Automation Platform Monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "plugins/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "ts-node -P tsconfig.seed.json prisma/seed.ts"
+  },
+  "prisma": {
+    "seed": "ts-node -P tsconfig.seed.json prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "next": "^14.1.0",
+    "prisma": "^5.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

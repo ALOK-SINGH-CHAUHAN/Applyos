@@ -1,0 +1,2 @@
+export const DEFAULT_IDLE_WAIT = 500;
+export const IGNORED_RESOURCE_TYPES = new Set(["EventSource", "WebSocket"]);

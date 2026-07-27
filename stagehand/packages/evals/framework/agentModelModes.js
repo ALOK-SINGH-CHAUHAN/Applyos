@@ -1,0 +1,23 @@
+import { AVAILABLE_CUA_MODELS, } from "@browserbasehq/stagehand";
+// Mirrors packages/core/lib/v3/types/private/agent.ts. Keep this local until
+// core exposes a public model-capability helper.
+const HYBRID_CAPABLE_MODEL_PATTERNS = [
+    "gemini-3",
+    "claude",
+    "gpt-5.4",
+    "gpt-5.5",
+    "gpt-5.6",
+];
+export function isCuaCapableModel(modelName) {
+    return AVAILABLE_CUA_MODELS.includes(modelName);
+}
+export function isHybridCapableModel(modelName) {
+    return HYBRID_CAPABLE_MODEL_PATTERNS.some((pattern) => modelName.includes(pattern));
+}
+export function inferDefaultStagehandAgentMode(modelName) {
+    if (isHybridCapableModel(modelName))
+        return "hybrid";
+    if (isCuaCapableModel(modelName))
+        return "cua";
+    return "dom";
+}

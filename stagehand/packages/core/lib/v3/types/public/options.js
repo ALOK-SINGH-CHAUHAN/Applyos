@@ -1,0 +1,3 @@
+import { LocalBrowserLaunchOptionsSchema, } from "./api.js";
+// Re-export for backwards compatibility (camelCase alias)
+export const localBrowserLaunchOptionsSchema = LocalBrowserLaunchOptionsSchema;

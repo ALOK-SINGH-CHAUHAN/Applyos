@@ -1,0 +1,22 @@
+import type { CDPSessionLike } from "../../../lib/v3/understudy/cdp.js";
+type Handler = (params?: Record<string, unknown>) => Promise<unknown> | unknown;
+export declare class MockCDPSession implements CDPSessionLike {
+    private readonly handlers;
+    readonly id: string;
+    readonly calls: Array<{
+        method: string;
+        params?: Record<string, unknown>;
+    }>;
+    private readonly listeners;
+    constructor(handlers?: Record<string, Handler>, sessionId?: string);
+    send<R = unknown>(method: string, params?: Record<string, unknown>): Promise<R>;
+    on<P = unknown>(event: string, handler: (params: P) => void): void;
+    off<P = unknown>(event: string, handler: (params: P) => void): void;
+    emit(event: string, params?: Record<string, unknown>): void;
+    listenerCount(event: string): number;
+    close(): Promise<void>;
+    callsFor(method: string): Array<{
+        params?: Record<string, unknown>;
+    }>;
+}
+export {};

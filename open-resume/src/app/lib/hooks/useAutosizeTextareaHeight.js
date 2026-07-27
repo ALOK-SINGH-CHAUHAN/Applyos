@@ -1,0 +1,35 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.useAutosizeTextareaHeight = void 0;
+const react_1 = require("react");
+/**
+ * Hook to autosize textarea height.
+ *
+ * The trick to resize is to first set its height to 0 and then set it back to scroll height.
+ * Reference: https://stackoverflow.com/a/25621277/7699841
+ *
+ * @example // Tailwind CSS
+ * const textareaRef = useAutosizeTextareaHeight({ value });
+ * <textarea ref={textareaRef} className="resize-none overflow-hidden"/>
+ */
+const useAutosizeTextareaHeight = ({ value }) => {
+    const textareaRef = (0, react_1.useRef)(null);
+    const resizeHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = "0px";
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    };
+    // Resize height when value changes
+    (0, react_1.useEffect)(() => {
+        resizeHeight();
+    }, [value]);
+    // Resize height when viewport resizes
+    (0, react_1.useEffect)(() => {
+        window.addEventListener("resize", resizeHeight);
+        return () => window.removeEventListener("resize", resizeHeight);
+    }, []);
+    return textareaRef;
+};
+exports.useAutosizeTextareaHeight = useAutosizeTextareaHeight;

@@ -1,0 +1,456 @@
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+enum ResumeStatus {
+  PARSING
+  READY
+  FAILED
+}
+
+enum AIOutputType {
+  JOB_ANALYSIS
+  RESUME_MATCH
+  TAILORING
+  COVER_LETTER
+  PROPOSAL
+}
+
+enum ApplicationStatus {
+  CREATED
+  TAILORING
+  TAILORED
+  LETTER_GENERATING
+  LETTER_READY
+  READY_FOR_REVIEW
+  AUTOMATION_PREPARING
+  AUTOMATION_RUNNING
+  SUBMITTED
+  VERIFIED
+  COMPLETED
+  FAILED
+  NEEDS_MANUAL_ACTION
+  TAILORING_FAILED
+  LETTER_FAILED
+  AUTOMATION_FAILED
+  VERIFICATION_FAILED
+  REQUIRES_ACTION
+  CANCELLED
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String
+  role         Role          @default(OPERATOR)
+  workspaceId  String        @map("workspace_id")
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id])
+  resumes      Resume[]
+  applications Application[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Workspace {
+  id                   String                @id @default(uuid())
+  name                 String
+  plan                 String                @default("free")
+  users                User[]
+  pluginConfigurations PluginConfiguration[]
+  createdAt            DateTime              @default(now()) @map("created_at")
+
+  @@map("workspaces")
+}
+
+model Resume {
+  id              String          @id @default(uuid())
+  userId          String          @map("user_id")
+  user            User            @relation(fields: [userId], references: [id])
+  title           String
+  originalFileUrl String          @map("original_file_url")
+  parsedJson      Json?           @map("parsed_json")
+  status          ResumeStatus    @default(PARSING)
+  versions        ResumeVersion[]
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  @@map("resumes")
+}
+
+model ResumeVersion {
+  id               String                 @id @default(uuid())
+  resumeId         String                 @map("resume_id")
+  resume           Resume                 @relation(fields: [resumeId], references: [id])
+  sourceVersionId  String?                @map("source_version_id")
+  sourceVersion    ResumeVersion?         @relation("VersionTree", fields: [sourceVersionId], references: [id])
+  childVersions    ResumeVersion[]        @relation("VersionTree")
+  tailoredForJobId String?                @map("tailored_for_job_id")
+  tailoredForJob   Job?                   @relation(fields: [tailoredForJobId], references: [id])
+  contentJson           Json                   @map("content_json")
+  atsScore              Float?                 @map("ats_score")
+  atsScoreBreakdownJson Json?                  @map("ats_score_breakdown_json")
+  aiSummaryJson         Json?                  @map("ai_summary_json")
+  skillsCategorizedJson Json?                  @map("skills_categorized_json")
+  insightsJson          Json?                  @map("insights_json")
+  jobCompatibilityJson  Json?                  @map("job_compatibility_json")
+  suggestionsJson       Json?                  @map("suggestions_json")
+  metadataJson          Json?                  @map("metadata_json")
+  groundingStatus       String?                @map("grounding_status")
+  diffJson              Json?                  @map("diff_json")
+  embedding             Unsupported("vector")?
+  applications          Application[]
+  matches               ResumeJobMatch[]
+  createdAt             DateTime               @default(now()) @map("created_at")
+
+  @@map("resume_versions")
+}
+
+model ResumeJobMatch {
+  id                   String        @id @default(uuid())
+  resumeVersionId      String        @map("resume_version_id")
+  resumeVersion        ResumeVersion @relation(fields: [resumeVersionId], references: [id], onDelete: Cascade)
+  jobId                String        @map("job_id")
+  job                  Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  overallMatch         Int           @map("overall_match")
+  atsCoverage          Int           @map("ats_coverage")
+  keywordCoverage      Int           @map("keyword_coverage")
+  skillMatch           Int           @map("skill_match")
+  experienceMatch      Int           @map("experience_match")
+  educationMatch       Int           @map("education_match")
+  cultureMatch         Int           @map("culture_match")
+  interviewReadiness   Int           @map("interview_readiness")
+  interviewProbability String        @map("interview_probability")
+  confidence           Float         @map("confidence")
+  strengthsJson        Json          @map("strengths_json")
+  weaknessesJson       Json          @map("weaknesses_json")
+  missingSkillsJson    Json          @map("missing_skills_json")
+  matchedSkillsJson    Json          @map("matched_skills_json")
+  experienceGap        String?       @map("experience_gap")
+  recommendedChangesJson Json        @map("recommended_changes_json")
+  tailoringImprovement String?       @map("tailoring_improvement")
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  @@unique([resumeVersionId, jobId])
+  @@map("resume_job_matches")
+}
+
+model Job {
+  id                  String               @id @default(uuid())
+  sourcePlatform      String               @map("source_platform") // e.g. GREENHOUSE, LEVER, ASHBY, INDEED, LINKEDIN, MANUAL
+  sourceUrl           String               @map("source_url")
+  urlFingerprint      String               @unique @map("url_fingerprint")
+  company             String
+  title               String
+  descriptionRaw      String               @map("description_raw")
+  status              String               @default("IMPORTING")
+  embedding           Unsupported("vector")?
+  tailoredResumes     ResumeVersion[]
+  applications        Application[]
+  matches             ResumeJobMatch[]
+  scrapedAt           DateTime             @default(now()) @map("scraped_at")
+  sourceSite          String?              @map("source_site")
+  lastVerifiedAt      DateTime             @default(now()) @map("last_verified_at")
+  isLive              Boolean              @default(true) @map("is_live")
+  platform            String?
+  originalUrl         String?              @map("original_url")
+  verificationStatus  String?              @default("UNVERIFIED") @map("verification_status")
+  lastCheckedAt       DateTime?            @map("last_checked_at")
+  isClosed            Boolean              @default(false) @map("is_closed")
+  expiredAt           DateTime?            @map("expired_at")
+
+  analysis            JobAnalysis?
+  requirements        JobRequirement[]
+  benefits            JobBenefit[]
+  keywords            JobKeyword[]
+  responsibilities    JobResponsibility[]
+  metadata            JobMetadata?
+  companyIntelligence CompanyIntelligence?
+
+  @@map("jobs")
+}
+
+model JobAnalysis {
+  id                  String   @id @default(uuid())
+  jobId               String   @unique @map("job_id")
+  job                 Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  summary             String
+  difficultyScore     String?  @map("difficulty_score")
+  difficultyReason    String?  @map("difficulty_reason")
+  jobQualityScore     Int?     @map("job_quality_score")
+  jobQualityReason    String?  @map("job_quality_reason")
+  hiringSignals       Json?    @map("hiring_signals")
+  interviewQuestions  Json?    @map("interview_questions")
+  hiddenRequirements  Json?    @map("hidden_requirements")
+  hiringStyle         Json?    @map("hiring_style")
+  interviewProcess    Json?    @map("interview_process")
+  hiringInsights      Json?    @map("hiring_insights")
+  missingExperiences  Json?    @map("missing_experiences")
+  estimatedSalary     String?  @map("estimated_salary")
+  experienceRequired  String?  @map("experience_required")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@map("job_analyses")
+}
+
+model JobRequirement {
+  id         String   @id @default(uuid())
+  jobId      String   @map("job_id")
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name       String
+  confidence Float    @default(1.0)
+  source     String   @default("requirements")
+  importance String   @default("required")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("job_requirements")
+}
+
+model JobBenefit {
+  id        String   @id @default(uuid())
+  jobId     String   @map("job_id")
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  benefit   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("job_benefits")
+}
+
+model JobKeyword {
+  id        String   @id @default(uuid())
+  jobId     String   @map("job_id")
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  keyword   String
+  group     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("job_keywords")
+}
+
+model JobResponsibility {
+  id             String   @id @default(uuid())
+  jobId          String   @map("job_id")
+  job            Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  responsibility String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("job_responsibilities")
+}
+
+model JobMetadata {
+  id                    String   @id @default(uuid())
+  jobId                 String   @unique @map("job_id")
+  job                   Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  location              String?
+  salaryText            String?  @map("salary_text")
+  employmentType        String?  @map("employment_type")
+  techStack             Json?    @map("tech_stack")
+  normalizedDescription String   @map("normalized_description")
+  importedBy            String?  @map("imported_by")
+  importedAt            DateTime @default(now()) @map("imported_at")
+
+  @@map("job_metadata")
+}
+
+model CompanyIntelligence {
+  id                 String   @id @default(uuid())
+  jobId              String   @unique @map("job_id")
+  job                Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  companyName        String   @map("company_name")
+  industry           String?
+  companySize        String?  @map("company_size")
+  funding            String?
+  techStack          Json?    @map("tech_stack")
+  engineeringCulture String?  @map("engineering_culture")
+  interviewStyle     String?  @map("interview_style")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@map("company_intelligence")
+}
+
+model AIOutput {
+  id              String       @id @default(uuid())
+  type            AIOutputType
+  inputRefType    String       @map("input_ref_type")
+  inputRefId      String       @map("input_ref_id")
+  providerUsed    String       @map("provider_used")
+  promptVersion   String       @map("prompt_version")
+  outputJson      Json         @map("output_json")
+  confidenceScore Float?       @map("confidence_score")
+  inputHash       String?      @unique @map("input_hash")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@map("ai_outputs")
+}
+
+model Application {
+  id              String            @id @default(uuid())
+  userId          String            @map("user_id")
+  user            User              @relation(fields: [userId], references: [id])
+  jobId           String            @map("job_id")
+  job             Job               @relation(fields: [jobId], references: [id])
+  resumeVersionId String            @map("resume_version_id")
+  resumeVersion   ResumeVersion     @relation(fields: [resumeVersionId], references: [id])
+  coverLetterId   String?           @unique @map("cover_letter_id")
+  coverLetter     CoverLetter?
+  proposalId      String?           @unique @map("proposal_id")
+  proposal        Proposal?
+  status          ApplicationStatus @default(CREATED)
+  pluginUsed      String?           @map("plugin_used")
+  browserSession  BrowserSession?
+  automationExecutions AutomationExecution[]
+  submittedAt     DateTime?         @map("submitted_at")
+  submissionScreenshot String?       @map("submission_screenshot")
+  confirmationUrl      String?       @map("confirmation_url")
+  verificationMethod   String?       @map("verification_method")
+  verificationEvidence String?       @map("verification_evidence")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  @@index([userId, status])
+  @@map("applications")
+}
+
+model CoverLetter {
+  id            String       @id @default(uuid())
+  applicationId String       @unique @map("application_id")
+  application   Application  @relation(fields: [applicationId], references: [id])
+  content       String
+  tonePreset    String       @map("tone_preset")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  @@map("cover_letters")
+}
+
+model Proposal {
+  id            String      @id @default(uuid())
+  applicationId String      @unique @map("application_id")
+  application   Application @relation(fields: [applicationId], references: [id])
+  content       String
+  platform      String
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  @@map("proposals")
+}
+
+model BrowserSession {
+  id              String      @id @default(uuid())
+  applicationId   String      @unique @map("application_id")
+  application     Application @relation(fields: [applicationId], references: [id])
+  pluginName      String      @map("plugin_name")
+  status          String
+  screenshotsJson Json?       @map("screenshots_json")
+  logJson         Json?       @map("log_json")
+  retryCount      Int         @default(0) @map("retry_count")
+  lastError       String?     @map("last_error")
+  startedAt       DateTime    @default(now()) @map("started_at")
+  finishedAt      DateTime?   @map("finished_at")
+
+  @@map("browser_sessions")
+}
+
+model PluginConfiguration {
+  id                   String    @id @default(uuid())
+  workspaceId          String    @map("workspace_id")
+  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  pluginName           String    @map("plugin_name")
+  enabled              Boolean   @default(true)
+  autoSubmitAllowed    Boolean   @default(false) @map("auto_submit_allowed")
+  credentialsEncrypted String?   @map("credentials_encrypted")
+  configJson           Json?     @map("config_json")
+
+  @@unique([workspaceId, pluginName])
+  @@map("plugin_configurations")
+}
+
+model WorkerStatus {
+  id          String   @id @default(uuid())
+  queueName   String   @map("queue_name")
+  jobIdBullmq String   @map("job_id_bullmq")
+  status      String
+  attempts    Int      @default(0)
+  error       String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("worker_statuses")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id])
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String   @map("resource_id")
+  metadataJson Json?    @map("metadata_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("audit_logs")
+}
+
+model AIExecution {
+  id               String   @id @default(uuid())
+  feature          String   // e.g. "RESUME_PARSE", "RESUME_ANALYSIS", "JOB_ANALYSIS", "COMPARISON", "TAILORING", "COVER_LETTER"
+  provider         String   // e.g. "gemini", "groq", "openrouter"
+  model            String   // e.g. "gemini-2.5-flash", "llama-3.1-8b-instant"
+  latencyMs        Int      @map("latency_ms")
+  promptTokens     Int      @default(0) @map("prompt_tokens")
+  completionTokens Int      @default(0) @map("completion_tokens")
+  totalTokens      Int      @default(0) @map("total_tokens")
+  cacheStatus      String   @map("cache_status") // "HIT" | "MISS"
+  promptHash       String   @map("prompt_hash")
+  responseHash     String?  @map("response_hash")
+  httpStatus       Int      @default(200) @map("http_status")
+  cost             Decimal  @default(0) @db.Decimal(10, 6)
+  promptText       String   @map("prompt_text") @db.Text
+  responseText     String?  @map("response_text") @db.Text
+  errorText        String?  @map("error_text") @db.Text
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("ai_executions")
+}
+
+model AutomationExecution {
+  id              String      @id @default(uuid())
+  applicationId   String      @map("application_id")
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  plugin          String
+  ats             String
+  browser         String      @default("playwright/chromium")
+  durationMs      Int         @map("duration_ms")
+  stepsJson       Json        @map("steps_json")
+  screenshotsJson Json?       @map("screenshots_json")
+  success         Boolean
+  errorText       String?     @map("error_text")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("automation_executions")
+}
+
+model JobProviderConfiguration {
+  id             String   @id @default(uuid())
+  providerName   String   @unique @map("provider_name") // "greenhouse", "lever", "ashby", "remoteok", "company_careers"
+  enabled        Boolean  @default(true)
+  credentialsJson Json?    @map("credentials_json") // { apiKey, secret, baseUrl }
+  boardsSynced   Int      @default(0) @map("boards_synced")
+  jobsImported   Int      @default(0) @map("jobs_imported")
+  lastSyncAt     DateTime? @map("last_sync_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("job_provider_configurations")
+}
+
