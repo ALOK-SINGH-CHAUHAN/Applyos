@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Colors */
+  /* ── Legacy clinical tokens (landing page) ── */
   --color-graphite-ink: #1b1b1b;
   --color-marble: #ffffff;
   --color-drafting-gray: #eaeaea;
@@ -16,8 +16,26 @@
   --color-forest-to-deep-gradient: #19a05f;
   --gradient-forest-to-deep-gradient: linear-gradient(89.97deg, rgb(25, 160, 95) 0.02%, rgb(13, 127, 140) 123.85%);
 
+  /* ── Dashboard brand tokens ── */
+  --sidebar-bg: #0E1130;
+  --sidebar-active: #5B4FE9;
+  --sidebar-text: #9CA3C4;
+  --sidebar-text-active: #FFFFFF;
+  --accent-primary: #6C5CE7;
+  --accent-primary-hover: #5A4BD4;
+  --bg-app: #F5F6FA;
+  --bg-card: #FFFFFF;
+  --border-subtle: #EDEEF3;
+  --text-primary: #1A1D2E;
+  --text-secondary: #8B8FA3;
+  --color-success: #22C55E;
+  --color-warning: #F5A623;
+  --color-info: #3B82F6;
+  --color-danger: #EF4444;
+
   /* Shadows */
   --shadow-lg: rgba(0, 0, 0, 0.15) 0px 4px 20px 0px;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
 body {
@@ -26,18 +44,30 @@ body {
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
-/* Custom clinical scrollbar styling */
+/* Dashboard body reset — applied to /dashboard route via bg-app-bg on layout */
+
+/* Custom scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--color-drafting-gray);
+  background: #F5F6FA;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-hairline);
+  background: #EDEEF3;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-steel);
+  background: #8B8FA3;
+}
+
+/* Recharts tooltip text fix */
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+/* Sidebar transition */
+.sidebar-nav-item {
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
